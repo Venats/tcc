@@ -1,4 +1,4 @@
-use regex::Regex;
+    use regex::Regex;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
@@ -89,4 +89,36 @@ pub fn lex(file_path : &str) -> VecDeque<LexToken>
         }
     }
     return lex_vec
+}
+
+
+#[test]
+fn test_from_str() 
+{
+    assert_eq!(LexToken::OpenBrace, LexToken::from_str("{"));
+    assert_eq!(LexToken::CloseBrace, LexToken::from_str("}"));
+    assert_eq!(LexToken::OpenParenth, LexToken::from_str("("));
+    assert_eq!(LexToken::CloseParenth, LexToken::from_str(")"));
+    assert_eq!(LexToken::Semicolon, LexToken::from_str(";"));
+    assert_eq!(LexToken::Int, LexToken::from_str("int"));
+    assert_eq!(LexToken::Return, LexToken::from_str("return"));
+    assert_eq!(LexToken::Identifier("main".to_string()), LexToken::from_str("main"));
+    assert_eq!(LexToken::IntLiteral("99".to_string()), LexToken::from_str("99"));
+    assert_eq!(LexToken::Undefined, LexToken::from_str("..."));
+}
+
+#[test]
+fn test_to_str() 
+{
+    assert_eq!(LexToken::OpenBrace.to_str(), Some("{"));
+    assert_eq!(LexToken::CloseBrace.to_str(), Some("}"));
+    assert_eq!(LexToken::OpenParenth.to_str(), Some("("));
+    assert_eq!(LexToken::CloseParenth.to_str(), Some(")"));
+    assert_eq!(LexToken::Semicolon.to_str(), Some(";"));
+    assert_eq!(LexToken::Int.to_str(), Some("int"));
+    assert_eq!(LexToken::Return.to_str(), Some("return"));
+    assert_eq!(LexToken::Identifier("main".to_string()).to_str(), Some("main"));
+    assert_eq!(LexToken::IntLiteral("99".to_string()).to_str(), Some("99"));
+
+    assert_eq!(LexToken::Undefined.to_str(),None);
 }

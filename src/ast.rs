@@ -163,3 +163,60 @@ impl Program
         None
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_deq(tokens : Vec<LexToken>) -> VecDeque<LexToken>{
+        tokens.into_iter().collect()
+    }
+
+    #[test]
+    fn validate_rule_true()
+    {
+        let mut deq = make_deq(vec!(LexToken::Semicolon));
+        assert_eq!(true, validate_rule(LexToken::Semicolon, &mut deq));
+        assert_eq!(0,deq.len());
+    }
+
+    #[test]
+    fn validate_rule_false()
+    {
+        let mut deq = make_deq(vec!(LexToken::CloseBrace));
+        assert_eq!(false, validate_rule(LexToken::Semicolon, &mut deq));
+        assert_eq!(0,deq.len());
+    }
+
+    #[test]
+    fn validate_rules_true()
+    {
+        let mut deq = make_deq(vec!(LexToken::Int
+                        , LexToken::Identifier("main".to_string())
+                        , LexToken::OpenParenth
+                        , LexToken::CloseParenth));
+        let test = vec!(LexToken::Int
+        , LexToken::Identifier("main".to_string())
+        , LexToken::OpenParenth
+        , LexToken::CloseParenth);
+        assert_eq!(true, validate_rules(&test, &mut deq));
+        assert_eq!(0,deq.len());
+    }
+
+    #[test]
+    fn validate_rules_false()
+    {
+        let mut deq = make_deq(vec!(LexToken::Int
+            , LexToken::OpenParenth
+            , LexToken::Identifier("main".to_string())
+            , LexToken::CloseParenth));
+        let test = vec!(LexToken::Int
+        , LexToken::Identifier("main".to_string())
+        , LexToken::OpenParenth
+        , LexToken::CloseParenth);
+
+        assert_eq!(false, validate_rules(&test, &mut deq));
+        assert_eq!(0,deq.len());
+    }
+}
