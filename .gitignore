@@ -1,3 +1,4 @@
 /target
 .vscode
 tcc.code-workspace
+test/write_a_c_compiler/

@@ -2,44 +2,6 @@ use crate::lexxer::*;
 use std::collections::VecDeque;
 
 
-fn validate_rules(req_tokens : &Vec<LexToken>, tokens : &mut VecDeque<LexToken>) -> bool
-{
-    if tokens.len() < req_tokens.len()
-    {
-        println!("FAILURE, Not enough tokens left");
-        return false;
-    }
-
-    for (match_token,req_token)  in tokens.drain(0..req_tokens.len()).zip(req_tokens)
-    {
-        if *req_token != match_token
-        {
-            println!("FAILURE, Expected Token {:?}, Found token {:?}", req_token,match_token);
-            return false;
-        }
-    }
-    true
-}
-
-fn validate_rule(req_token : LexToken, tokens : &mut VecDeque<LexToken>) -> bool
-{
-    if let Some(token) = tokens.pop_front()
-    {
-        if req_token == token 
-        {
-            return true;
-        }
-        else
-        {
-            println!("FAILURE, Expected Token {:?}, Found token {:?}", req_token,token);
-        }
-        return req_token == token
-    }
-    false
-
-}
-
-
 #[derive(Debug)]
 pub enum Constant
 {
@@ -61,8 +23,8 @@ pub enum Statement
 #[derive(Debug)]
 pub struct FunctionDecl
 {
-    name : String,
-    body : Statement,
+    pub name : String,
+    pub body : Statement,
 }
 
 #[derive(Debug)]
@@ -77,6 +39,7 @@ impl Constant
     {
         if let Some(LexToken::IntLiteral(int_str)) = tokens.pop_front()
         {
+            let const_int = int_str.parse::<i32>();
             if let Ok(_) = int_str.parse::<i32>()
             {
                 return Some(Constant::Integer(int_str));
@@ -164,6 +127,42 @@ impl Program
     }
 }
 
+
+fn validate_rules(req_tokens : &Vec<LexToken>, tokens : &mut VecDeque<LexToken>) -> bool
+{
+    if tokens.len() < req_tokens.len()
+    {
+        println!("FAILURE, Not enough tokens left");
+        return false;
+    }
+
+    for (match_token,req_token)  in tokens.drain(0..req_tokens.len()).zip(req_tokens)
+    {
+        if *req_token != match_token
+        {
+            println!("FAILURE, Expected Token {:?}, Found token {:?}", req_token,match_token);
+            return false;
+        }
+    }
+    true
+}
+
+fn validate_rule(req_token : LexToken, tokens : &mut VecDeque<LexToken>) -> bool
+{
+    if let Some(token) = tokens.pop_front()
+    {
+        if req_token == token 
+        {
+            return true;
+        }
+        else
+        {
+            println!("FAILURE, Expected Token {:?}, Found token {:?}", req_token,token);
+        }
+        return req_token == token
+    }
+    false
+}
 
 #[cfg(test)]
 mod tests {

@@ -1,37 +1,31 @@
 use std::env;
+use std::fs::File;
+use std::io::prelude::*;
+
+use crate::asm_generator::generate_asm;
 
 mod ast;
 mod lexxer;
-use crate::lexxer::*;
-
-// static assembly_format: &str = "
-//         .globl _main
-//         _main:
-//             movl    ${}, %eax
-//             ret
-// ";
+mod asm_generator;
 
 
 
-fn main() {
+
+fn main(){
     let args: Vec<String> = env::args().collect();
     let mut lexxed_file = lexxer::lex(&args[1]);
-    println!("{:?}", lexxed_file);
-
-    if let Some(ast) = ast::Program::new(&mut lexxed_file)
-    {
-        println!("{:?}",ast);
-    }
-//     let assembly_file = str::replace(&args[1], ".c", ".s");
-//     let source_str = fs::read_to_string(&args[1]).unwrap();
     
-//     let source_match = source_re.captures(&source_str).unwrap();
-//     let retval = source_match.name("ret").unwrap().as_str();
-//     fs::write(assembly_file,format!("
-//     .globl _main
-//     _main:
-//         movl    ${}, %eax
-//         ret
-// ",retval)).unwrap();
-    println!("Hello, world!");
+    let ast_program = match ast::Program::new(&mut lexxed_file)
+    {
+        Some(it) => it,
+        _ => return,
+    };
+
+    let asm_string = generate_asm(&ast_program);
+    let last_dot_pos = args[1].rfind('.').unwrap();
+    let out_file = &args[1][..last_dot_pos];
+    let mut out_file = File::create(out_file).unwrap();
+    out_file.write_all(asm_string.as_bytes()).unwrap();
 }
+
+
