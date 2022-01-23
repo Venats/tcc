@@ -11,14 +11,14 @@ pub fn generate_asm(program_ast : &Program) -> String
 
 fn function_asm(func_decl : &FunctionDecl) -> String
 {
-    return format!(".global _{}\n{}:\n{}", &func_decl.name,&func_decl.name, statement_asm(&func_decl.body));
+    return format!(".globl {}\n{}:\n{}", &func_decl.name,&func_decl.name, statement_asm(&func_decl.body));
 }
 
 fn statement_asm(statement : &Statement) -> String
 {
     match statement
     {
-        Statement::Return(exp) => return format!("movl ${}, %eax\nret", expression_asm(&exp)),
+        Statement::Return(exp) => return format!("movl ${}, %eax\nret\n", expression_asm(&exp)),
     };
 }
 

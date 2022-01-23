@@ -101,7 +101,10 @@ impl FunctionDecl
                 {
                     if let Some(func_body) = Statement::new(tokens)
                     {
-                        return Some(FunctionDecl{name: func_name, body: func_body});
+                        if validate_rule(LexToken::CloseBrace, tokens)
+                        {
+                            return Some(FunctionDecl{name: func_name, body: func_body});
+                        }
                     }
                 }
             }
