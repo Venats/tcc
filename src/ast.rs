@@ -9,9 +9,18 @@ pub enum Constant
 }
 
 #[derive(Debug)]
+pub enum Operator
+{
+    Negation,
+    BitwiseComplement,
+    LogicalNegation,
+}
+
+#[derive(Debug)]
 pub enum Expression
 {
     Constant(Constant),
+    UnOp(Operator, Box<Expression>),
 }
 
 #[derive(Debug)]
@@ -39,7 +48,6 @@ impl Constant
     {
         if let Some(LexToken::IntLiteral(int_str)) = tokens.pop_front()
         {
-            let const_int = int_str.parse::<i32>();
             if let Ok(_) = int_str.parse::<i32>()
             {
                 return Some(Constant::Integer(int_str));
@@ -50,21 +58,54 @@ impl Constant
     }
 }
 
+impl Operator
+{
+    pub fn new(tokens : &mut VecDeque<LexToken>) -> Option<Operator>
+    {
+        match tokens.pop_front()
+        {
+            Some(LexToken::Negation) => return Some(Operator::Negation),
+            Some(LexToken::BitwiseComplement) => return Some(Operator::BitwiseComplement),
+            Some(LexToken::LogicalNegation) => return Some(Operator::LogicalNegation),
+            _ => return None,
+        };
+    }
+}
+
 
 impl Expression 
 {
     pub fn new(tokens : &mut VecDeque<LexToken>) -> Option<Expression>
     {
-        if let Some(cons) = Constant::new(tokens)
+        if let Some(token) = tokens.front() 
         {
-            return Some(Expression::Constant(cons));
+            match token
+            {
+                LexToken::IntLiteral(_) => { 
+                    if let Some(cons) = Constant::new(tokens)
+                    {
+                        return Some(Expression::Constant(cons));
+                    }
+                    println!("Failed generating expression");
+                    return None;
+                },
+                _ => {
+                    if let Some(oper) = Operator::new(tokens)
+                    {
+                        if let Some(exp) = Expression::new(tokens)
+                        {
+                            return Some(Expression::UnOp(oper,Box::new(exp)));
+                        }
+                    }
+                    println!("Failed generating expression");
+                    return None;
+                },
+            };
         }
-        println!("Error parsing the Expression");
-        None
+        println!("Failed generating expression");
+        return None;
     }
-
 }
-
 
 impl Statement
 {
@@ -195,11 +236,11 @@ mod tests {
     fn validate_rules_true()
     {
         let mut deq = make_deq(vec!(LexToken::Int
-                        , LexToken::Identifier("main".to_string())
+                        , LexToken::Identifier(String::from("main"))
                         , LexToken::OpenParenth
                         , LexToken::CloseParenth));
         let test = vec!(LexToken::Int
-        , LexToken::Identifier("main".to_string())
+        , LexToken::Identifier(String::from("main"))
         , LexToken::OpenParenth
         , LexToken::CloseParenth);
         assert_eq!(true, validate_rules(&test, &mut deq));
@@ -211,10 +252,10 @@ mod tests {
     {
         let mut deq = make_deq(vec!(LexToken::Int
             , LexToken::OpenParenth
-            , LexToken::Identifier("main".to_string())
+            , LexToken::Identifier(String::from("main"))
             , LexToken::CloseParenth));
         let test = vec!(LexToken::Int
-        , LexToken::Identifier("main".to_string())
+        , LexToken::Identifier(String::from("main"))
         , LexToken::OpenParenth
         , LexToken::CloseParenth);
 

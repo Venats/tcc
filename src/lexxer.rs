@@ -1,3 +1,4 @@
+
 use regex::Regex;
 use std::fs::File;
 use std::io::{self, BufRead};
@@ -24,6 +25,9 @@ pub enum LexToken
     Return,
     Identifier(String),
     IntLiteral(String),
+    Negation,
+    BitwiseComplement,
+    LogicalNegation,
     Undefined
 }
 
@@ -38,6 +42,9 @@ impl LexToken
             ")" => return LexToken::CloseParenth,
             ";" => return LexToken::Semicolon,
             "int" => return LexToken::Int,
+            "-" => return LexToken::Negation,
+            "~" => return LexToken::BitwiseComplement,
+            "!" => return LexToken::LogicalNegation,
             "return" => return LexToken::Return,
             _ =>
             {
@@ -53,6 +60,7 @@ impl LexToken
         }
         return LexToken::Undefined;
     }
+
     fn to_str(&self) -> Option<&str> {
         match self {
             LexToken::OpenBrace => return Some("{"),
@@ -62,6 +70,9 @@ impl LexToken
             LexToken::Semicolon => return Some(";"),
             LexToken::Int => return Some("int"),
             LexToken::Return => return Some("return"),
+            LexToken::Negation => return Some("-"),
+            LexToken::BitwiseComplement => return Some("~"),
+            LexToken::LogicalNegation => return Some("!"),
             LexToken::Identifier(id) => return Some(id),
             LexToken::IntLiteral(int) => return Some(int),
             LexToken::Undefined => return None
@@ -72,8 +83,6 @@ impl LexToken
 
 pub fn lex(file_path : &str) -> VecDeque<LexToken> 
 {
-    // let source_str = fs::read_to_string(file_name).unwrap();
-    // source_str.replace("\n",)
     let mut lex_vec = VecDeque::new();
     if let Ok(lines) = read_lines(file_path)
     {
@@ -81,7 +90,7 @@ pub fn lex(file_path : &str) -> VecDeque<LexToken>
         {
             if let Ok(l) = line 
             {
-                let re = Regex::new(r"[\{\}\(\);]").unwrap();
+                let re = Regex::new(r"[\{\}\(\);!~-]").unwrap();
                 let space_l = re.replace_all(&l," $0 ").into_owned();
                 let mut lex_line : VecDeque<LexToken> = space_l.split_whitespace().map(|word| LexToken::from_str(word)).collect();
                 lex_vec.append(&mut lex_line);
@@ -102,8 +111,11 @@ fn test_from_str()
     assert_eq!(LexToken::Semicolon, LexToken::from_str(";"));
     assert_eq!(LexToken::Int, LexToken::from_str("int"));
     assert_eq!(LexToken::Return, LexToken::from_str("return"));
-    assert_eq!(LexToken::Identifier("main".to_string()), LexToken::from_str("main"));
-    assert_eq!(LexToken::IntLiteral("99".to_string()), LexToken::from_str("99"));
+    assert_eq!(LexToken::Negation, LexToken::from_str("-"));
+    assert_eq!(LexToken::BitwiseComplement, LexToken::from_str("~"));
+    assert_eq!(LexToken::LogicalNegation, LexToken::from_str("!"));
+    assert_eq!(LexToken::Identifier(String::from("main")), LexToken::from_str("main"));
+    assert_eq!(LexToken::IntLiteral(String::from("99")), LexToken::from_str("99"));
     assert_eq!(LexToken::Undefined, LexToken::from_str("..."));
 }
 
@@ -117,8 +129,11 @@ fn test_to_str()
     assert_eq!(LexToken::Semicolon.to_str(), Some(";"));
     assert_eq!(LexToken::Int.to_str(), Some("int"));
     assert_eq!(LexToken::Return.to_str(), Some("return"));
-    assert_eq!(LexToken::Identifier("main".to_string()).to_str(), Some("main"));
-    assert_eq!(LexToken::IntLiteral("99".to_string()).to_str(), Some("99"));
+    assert_eq!(LexToken::Negation.to_str(), Some("-"));
+    assert_eq!(LexToken::BitwiseComplement.to_str(), Some("~"));
+    assert_eq!(LexToken::LogicalNegation.to_str(), Some("!"));
+    assert_eq!(LexToken::Identifier(String::from("main")).to_str(), Some("main"));
+    assert_eq!(LexToken::IntLiteral(String::from("99")).to_str(), Some("99"));
 
     assert_eq!(LexToken::Undefined.to_str(),None);
 }

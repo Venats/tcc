@@ -18,7 +18,7 @@ fn statement_asm(statement : &Statement) -> String
 {
     match statement
     {
-        Statement::Return(exp) => return format!("movl ${}, %eax\nret\n", expression_asm(&exp)),
+        Statement::Return(exp) => return format!("{}\nret\n", expression_asm(&exp)),
     };
 }
 
@@ -27,13 +27,24 @@ fn expression_asm(expression : &Expression) -> String
     match expression
     {
         Expression::Constant(const_str) => return format!("{}", constant_asm(&const_str)),
+        Expression::UnOp(oper, exp) => return format!("{}\n{}",expression_asm(exp), operator_asm(oper)),
     };
+}
+
+fn operator_asm(oper : &Operator) -> String
+{
+    match oper
+    {
+        Operator::Negation => return String::from("neg %eax\n"),
+        Operator::BitwiseComplement => String::from("not %eax\n"),
+        Operator::LogicalNegation => return String::from("cmpl $0, %eax\nmovl $0, %eax\nsete %al\n"),
+    }
 }
 
 fn constant_asm(constant : &Constant) -> String
 {
     match constant
     {
-        Constant::Integer(string) => return string.clone(),
+        Constant::Integer(string) => return format!("movl ${}, %eax",string),
     };
 }
