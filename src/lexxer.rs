@@ -5,7 +5,7 @@ use std::io::{self, BufRead};
 use std::path::Path;
 use std::collections::VecDeque;
 
-const TOKENS_NEED_SPACE_REGEX : &str = r"[\{\}\(\);!~-]";
+const TOKENS_NEED_SPACE_REGEX : &str = r"[/+\*\{\}\(\);!~-]";
 
 
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
@@ -40,6 +40,9 @@ pub enum LexToken
     Negation,
     BitwiseComplement,
     LogicalNegation,
+    Addition,
+    Multiplication,
+    Division,
     Undefined
 }
 
@@ -48,17 +51,20 @@ impl LexToken
     fn from_str(lex_str : &str) -> LexToken
     {
         match lex_str {
-            "{" => return LexToken::OpenBrace,
-            "}" => return LexToken::CloseBrace,
-            "(" => return LexToken::OpenParenth,
-            ")" => return LexToken::CloseParenth,
-            ";" => return LexToken::Semicolon,
-            "int" => return LexToken::Int,
-            "-" => return LexToken::Negation,
-            "~" => return LexToken::BitwiseComplement,
-            "!" => return LexToken::LogicalNegation,
-            "return" => return LexToken::Return,
-            _ =>
+            "{"         => return LexToken::OpenBrace,
+            "}"         => return LexToken::CloseBrace,
+            "("         => return LexToken::OpenParenth,
+            ")"         => return LexToken::CloseParenth,
+            ";"         => return LexToken::Semicolon,
+            "int"       => return LexToken::Int,
+            "return"    => return LexToken::Return,
+            "-"         => return LexToken::Negation,
+            "~"         => return LexToken::BitwiseComplement,
+            "!"         => return LexToken::LogicalNegation,
+            "+"         => return LexToken::Addition,
+            "*"         => return LexToken::Multiplication,
+            "/"         => return LexToken::Division,
+            _           =>
             {
                 if let Some(id) = Regex::new(r"[a-zA-Z]\w*").unwrap().captures(lex_str) 
                 {
@@ -75,18 +81,21 @@ impl LexToken
 
     fn to_str(&self) -> Option<&str> {
         match self {
-            LexToken::OpenBrace => return Some("{"),
-            LexToken::CloseBrace => return Some("}"),
-            LexToken::OpenParenth => return Some("("),
-            LexToken::CloseParenth => return Some(")"),
-            LexToken::Semicolon => return Some(";"),
-            LexToken::Int => return Some("int"),
-            LexToken::Return => return Some("return"),
-            LexToken::Negation => return Some("-"),
-            LexToken::BitwiseComplement => return Some("~"),
-            LexToken::LogicalNegation => return Some("!"),
-            LexToken::Identifier(id) => return Some(id),
-            LexToken::IntLiteral(int) => return Some(int),
+            LexToken::OpenBrace                 => return Some("{"),
+            LexToken::CloseBrace                => return Some("}"),
+            LexToken::OpenParenth               => return Some("("),
+            LexToken::CloseParenth              => return Some(")"),
+            LexToken::Semicolon                 => return Some(";"),
+            LexToken::Int                       => return Some("int"),
+            LexToken::Return                    => return Some("return"),
+            LexToken::Negation                  => return Some("-"),
+            LexToken::BitwiseComplement         => return Some("~"),
+            LexToken::LogicalNegation           => return Some("!"),
+            LexToken::Identifier(id)    => return Some(id),
+            LexToken::IntLiteral(int)   => return Some(int),
+            LexToken::Addition                  => return Some("+"),
+            LexToken::Multiplication            => return Some("*"),
+            LexToken::Division                  => return Some("/"),
             LexToken::Undefined => return None
         }
     }
@@ -116,21 +125,38 @@ mod test
 {
     use super::*;
 
-fn generate_stage_2_vec(un_oper : LexToken) -> VecDeque<LexToken>
-{
-    let mut stage2_vec = VecDeque::new();
-    stage2_vec.push_back(LexToken::Int);
-    stage2_vec.push_back(LexToken::Identifier(String::from("main")));
-    stage2_vec.push_back(LexToken::OpenParenth);
-    stage2_vec.push_back(LexToken::CloseParenth);
-    stage2_vec.push_back(LexToken::OpenBrace);
-    stage2_vec.push_back(LexToken::Return);
-    stage2_vec.push_back(un_oper);
-    stage2_vec.push_back(LexToken::IntLiteral(String::from("3")));
-    stage2_vec.push_back(LexToken::Semicolon);
-    stage2_vec.push_back(LexToken::CloseBrace);
-    return stage2_vec;
-}
+    fn generate_stage_2_vec(un_oper : LexToken, int_literal: &str) -> VecDeque<LexToken>
+    {
+        let mut stage2_vec = VecDeque::new();
+        stage2_vec.push_back(LexToken::Int);
+        stage2_vec.push_back(LexToken::Identifier(String::from("main")));
+        stage2_vec.push_back(LexToken::OpenParenth);
+        stage2_vec.push_back(LexToken::CloseParenth);
+        stage2_vec.push_back(LexToken::OpenBrace);
+        stage2_vec.push_back(LexToken::Return);
+        stage2_vec.push_back(un_oper);
+        stage2_vec.push_back(LexToken::IntLiteral(String::from(int_literal.to_string())));
+        stage2_vec.push_back(LexToken::Semicolon);
+        stage2_vec.push_back(LexToken::CloseBrace);
+        return stage2_vec;
+    }
+
+    fn generate_stage_3_vec(oper : LexToken, int_literal: &str) -> VecDeque<LexToken>
+    {
+        let mut stage3_vec = VecDeque::new();
+        stage3_vec.push_back(LexToken::Int);
+        stage3_vec.push_back(LexToken::Identifier(String::from("main")));
+        stage3_vec.push_back(LexToken::OpenParenth);
+        stage3_vec.push_back(LexToken::CloseParenth);
+        stage3_vec.push_back(LexToken::OpenBrace);
+        stage3_vec.push_back(LexToken::Return);
+        stage3_vec.push_back(LexToken::IntLiteral(String::from(int_literal.to_string())));
+        stage3_vec.push_back(oper);
+        stage3_vec.push_back(LexToken::IntLiteral(String::from(int_literal.to_string())));
+        stage3_vec.push_back(LexToken::Semicolon);
+        stage3_vec.push_back(LexToken::CloseBrace);
+        return stage3_vec;
+    }
 
     #[test]
     fn test_simple_format_spacing()
@@ -150,8 +176,8 @@ fn generate_stage_2_vec(un_oper : LexToken) -> VecDeque<LexToken>
     {
         assert_eq!(format_spacing("-!~{hello"), " -  !  ~  { hello");
         assert_eq!(format_spacing("void main(){return 3;}"), "void main (  )  { return 3 ;  } ");
-        assert_eq!(format_spacing("int main(int argc, char* argv) {return ~1; }"),
-                     "int main ( int argc, char* argv )   { return  ~ 1 ;   } ");
+        assert_eq!(format_spacing("int main(int argc) {return ~1; }"),
+                     "int main ( int argc )   { return  ~ 1 ;   } ");
     }
     
     
@@ -174,9 +200,17 @@ fn generate_stage_2_vec(un_oper : LexToken) -> VecDeque<LexToken>
     #[test]
     fn test_stage2_from_line()
     {
-        assert_eq!(from_line("int main(){return !3;}"), generate_stage_2_vec(LexToken::LogicalNegation));
-        assert_eq!(from_line("int main(){return -3;}"), generate_stage_2_vec(LexToken::Negation));
-        assert_eq!(from_line("int main(){return ~3;}"), generate_stage_2_vec(LexToken::BitwiseComplement));
+        assert_eq!(from_line("int main(){return !3;}"), generate_stage_2_vec(LexToken::LogicalNegation, "3"));
+        assert_eq!(from_line("int main(){return -3;}"), generate_stage_2_vec(LexToken::Negation, "3"));
+        assert_eq!(from_line("int main(){return ~3;}"), generate_stage_2_vec(LexToken::BitwiseComplement, "3"));
+    }
+
+    #[test]
+    fn test_stage3_from_line()
+    {
+        assert_eq!(from_line("int main(){return 2+2;}"), generate_stage_3_vec(LexToken::Addition,"2"));
+        assert_eq!(from_line("int main(){return 2*2;}"), generate_stage_3_vec(LexToken::Multiplication,"2"));
+        assert_eq!(from_line("int main(){return 2/2;}"), generate_stage_3_vec(LexToken::Division,"2"));
     }
 
 
