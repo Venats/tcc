@@ -9,7 +9,7 @@ pub enum Constant
 }
 
 #[derive(Debug)]
-pub enum Operator
+pub enum UniOperator
 {
     Negation,
     BitwiseComplement,
@@ -17,10 +17,20 @@ pub enum Operator
 }
 
 #[derive(Debug)]
+pub enum BiOperator
+{
+    Addition,
+    Multiplication,
+    Division,
+}
+
+
+#[derive(Debug)]
 pub enum Expression
 {
     Constant(Constant),
-    UnOp(Operator, Box<Expression>),
+    UnOp(UniOperator, Box<Expression>),
+    BinOp(BiOperator, Box<Expression>, Box<Expression>)
 }
 
 #[derive(Debug)]
@@ -58,15 +68,15 @@ impl Constant
     }
 }
 
-impl Operator
+impl UniOperator
 {
-    pub fn new(tokens : &mut VecDeque<LexToken>) -> Option<Operator>
+    pub fn new(tokens : &mut VecDeque<LexToken>) -> Option<UniOperator>
     {
         match tokens.pop_front()
         {
-            Some(LexToken::Negation) => return Some(Operator::Negation),
-            Some(LexToken::BitwiseComplement) => return Some(Operator::BitwiseComplement),
-            Some(LexToken::LogicalNegation) => return Some(Operator::LogicalNegation),
+            Some(LexToken::Negation) => return Some(UniOperator::Negation),
+            Some(LexToken::BitwiseComplement) => return Some(UniOperator::BitwiseComplement),
+            Some(LexToken::LogicalNegation) => return Some(UniOperator::LogicalNegation),
             _ => return None,
         };
     }
@@ -90,7 +100,7 @@ impl Expression
                     return None;
                 },
                 _ => {
-                    if let Some(oper) = Operator::new(tokens)
+                    if let Some(oper) = UniOperator::new(tokens)
                     {
                         if let Some(exp) = Expression::new(tokens)
                         {

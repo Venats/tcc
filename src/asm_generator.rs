@@ -27,17 +27,18 @@ fn expression_asm(expression : &Expression) -> String
     match expression
     {
         Expression::Constant(const_str) => return format!("{}", constant_asm(&const_str)),
-        Expression::UnOp(oper, exp) => return format!("{}\n{}",expression_asm(exp), operator_asm(oper)),
+        Expression::UnOp(oper, exp) => return format!("{}\n{}",expression_asm(exp), unioperator_asm(oper)),
+        Expression::BinOp(oper, exp,expr) => return "".to_string(),
     };
 }
 
-fn operator_asm(oper : &Operator) -> String
+fn unioperator_asm(oper : &UniOperator) -> String
 {
     match oper
     {
-        Operator::Negation => return String::from("neg %eax\n"),
-        Operator::BitwiseComplement => String::from("not %eax\n"),
-        Operator::LogicalNegation => return String::from("cmpl $0, %eax\nmovl $0, %eax\nsete %al\n"),
+        UniOperator::Negation => return String::from("neg %eax\n"),
+        UniOperator::BitwiseComplement => String::from("not %eax\n"),
+        UniOperator::LogicalNegation => return String::from("cmpl $0, %eax\nmovl $0, %eax\nsete %al\n"),
     }
 }
 

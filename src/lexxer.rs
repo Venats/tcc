@@ -209,8 +209,11 @@ mod test
     fn test_stage3_from_line()
     {
         assert_eq!(from_line("int main(){return 2+2;}"), generate_stage_3_vec(LexToken::Addition,"2"));
+        assert_eq!(from_line("int main(){return 2 + 2;}"), generate_stage_3_vec(LexToken::Addition,"2"));
         assert_eq!(from_line("int main(){return 2*2;}"), generate_stage_3_vec(LexToken::Multiplication,"2"));
+        assert_eq!(from_line("int main(){return 2 * 2;}"), generate_stage_3_vec(LexToken::Multiplication,"2"));
         assert_eq!(from_line("int main(){return 2/2;}"), generate_stage_3_vec(LexToken::Division,"2"));
+        assert_eq!(from_line("int main(){return 2 / 2;}"), generate_stage_3_vec(LexToken::Division,"2"));
     }
 
 
