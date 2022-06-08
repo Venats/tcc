@@ -26,9 +26,10 @@ fn expression_asm(expression : &Expression) -> String
 {
     match expression
     {
-        Expression::Constant(const_str) => return format!("{}", constant_asm(&const_str)),
-        Expression::UnOp(oper, exp) => return format!("{}\n{}",expression_asm(exp), unioperator_asm(oper)),
+        // Expression::Constant(const_str) => return format!("{}", constant_asm(&const_str)),
+        // Expression::UnOp(oper, exp) => return format!("{}\n{}",expression_asm(exp), unioperator_asm(oper)),
         Expression::BinOp(oper, exp,expr) => return "".to_string(),
+        _ => return "".to_string(), //TODO:REMOVE
     };
 }
 

@@ -20,6 +20,7 @@ pub enum UniOperator
 pub enum BiOperator
 {
     Addition,
+    Subtraction,
     Multiplication,
     Division,
 }
@@ -28,9 +29,16 @@ pub enum BiOperator
 #[derive(Debug)]
 pub enum Expression
 {
+    BinOp(Box<Expression>,BiOperator, Box<Expression>),
+    Fact(Box<Factor>)
+}
+
+#[derive(Debug)]
+pub enum Factor
+{
     Constant(Constant),
-    UnOp(UniOperator, Box<Expression>),
-    BinOp(BiOperator, Box<Expression>, Box<Expression>)
+    UnOp(UniOperator, Box<Factor>),
+    Expr(Expression)
 }
 
 #[derive(Debug)]
@@ -54,65 +62,134 @@ pub enum Program
 
 impl Constant 
 {
-    pub fn new(tokens : &mut VecDeque<LexToken>) -> Option<Constant>
+    pub fn new(token : &LexToken) -> Option<Constant>
     {
-        if let Some(LexToken::IntLiteral(int_str)) = tokens.pop_front()
+        match token
         {
-            if let Ok(_) = int_str.parse::<i32>()
-            {
-                return Some(Constant::Integer(int_str));
-            }
-        }
-        println!("Error parsing the Constant");
-        None
-    }
-}
-
-impl UniOperator
-{
-    pub fn new(tokens : &mut VecDeque<LexToken>) -> Option<UniOperator>
-    {
-        match tokens.pop_front()
-        {
-            Some(LexToken::Negation) => return Some(UniOperator::Negation),
-            Some(LexToken::BitwiseComplement) => return Some(UniOperator::BitwiseComplement),
-            Some(LexToken::LogicalNegation) => return Some(UniOperator::LogicalNegation),
+            LexToken::IntLiteral(int_str) => {
+                if let Ok(_) = int_str.parse::<i32>()
+                {
+                    return Some(Constant::Integer(int_str.to_owned()));
+                }
+                else
+                {
+                    println!("Error parsing the Constant");
+                    return None;
+                }
+            },
             _ => return None,
         };
     }
 }
 
+impl UniOperator
+{
+    pub fn new(token: &LexToken) -> Option<UniOperator>
+    {
+        match token
+        {
+            LexToken::Negation => return Some(UniOperator::Negation),
+            LexToken::BitwiseComplement => return Some(UniOperator::BitwiseComplement),
+            LexToken::LogicalNegation => return Some(UniOperator::LogicalNegation),
+            _ => return None,
+        };
+    }
+}
 
+impl BiOperator
+{
+    pub fn new(token: &LexToken) -> Option<BiOperator>
+    {
+        match token
+        {
+            LexToken::Addition => return Some(BiOperator::Addition),
+            LexToken::Negation => return Some(BiOperator::Subtraction),
+            LexToken::Multiplication => return Some(BiOperator::Multiplication),
+            LexToken::Division => return Some(BiOperator::Division),
+            _ => return None,
+        };
+    }
+}
 impl Expression 
 {
     pub fn new(tokens : &mut VecDeque<LexToken>) -> Option<Expression>
     {
-        if let Some(token) = tokens.front() 
+        if let Some(factor) = Factor::new(tokens)
+        {
+            return Some(Expression::Fact(Box::new(factor)));
+        }
+        else
+        {
+            let maybe_expr1 = Expression::new(tokens);
+            let maybe_bin_oper = tokens.pop_front();
+            if maybe_expr1.is_some() && 
+                (maybe_bin_oper == Some(LexToken::Addition) ||
+                    maybe_bin_oper == Some(LexToken::Negation))
+            {
+                if let Some(expr2) = Expression::new(tokens)
+                {
+                    return Some(Expression::BinOp(Box::new(maybe_expr1.unwrap()),
+                                    BiOperator::new(&maybe_bin_oper.unwrap()).unwrap(),
+                                    Box::new(expr2)));
+                }
+            }
+            else if maybe_bin_oper.is_some()
+            {
+                tokens.push_front(maybe_bin_oper.unwrap());
+            }
+
+        }
+        if let Some(token) = tokens.pop_front() 
         {
             match token
             {
-                LexToken::IntLiteral(_) => { 
-                    if let Some(cons) = Constant::new(tokens)
-                    {
-                        return Some(Expression::Constant(cons));
-                    }
-                    println!("Failed generating expression");
-                    return None;
-                },
-                _ => {
-                    if let Some(oper) = UniOperator::new(tokens)
-                    {
-                        if let Some(exp) = Expression::new(tokens)
-                        {
-                            return Some(Expression::UnOp(oper,Box::new(exp)));
-                        }
-                    }
-                    println!("Failed generating expression");
-                    return None;
-                },
+                _ => return None,
             };
         }
         println!("Failed generating expression");
+        return None;
+    }
+}
+
+impl Factor
+{
+    pub fn new(tokens : &mut VecDeque<LexToken>) -> Option<Factor>
+    {
+        if let Some(token) = tokens.pop_front() 
+        {
+            match token
+            {
+                LexToken::OpenParenth => {
+                    let maybe_expr = Expression::new(tokens);
+                    let maybe_close = tokens.pop_front();
+
+                    if maybe_expr.is_some() &&
+                        maybe_close == Some(LexToken::CloseParenth)
+                    {
+                        return Some(Factor::Expr(maybe_expr.unwrap()));
+                    }
+                }
+                LexToken::IntLiteral(_) => { 
+                    if let Some(cons) = Constant::new(&token)
+                    {
+                        return Some(Factor::Constant(cons));
+                    }
+                    println!("Failed generating factor");
+                    return None;
+                },
+                _ => {
+                    if let Some(oper) = UniOperator::new(&token)
+                    {
+                        if let Some(factor) = Factor::new(tokens)
+                        {
+                            return Some(Factor::UnOp(oper,Box::new(factor)));
+                        }
+                    }
+                    println!("Failed generating factor");
+                    return None;
+                },
+            }
+        }
         return None;
     }
 }
