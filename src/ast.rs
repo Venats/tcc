@@ -1,5 +1,5 @@
 use crate::lexxer::*;
-use std::collections::VecDeque;
+use std::{collections::VecDeque, f32::consts::E};
 
 
 #[derive(Debug)]
@@ -29,8 +29,14 @@ pub enum BiOperator
 #[derive(Debug)]
 pub enum Expression
 {
-    BinOp(Box<Expression>,BiOperator, Box<Expression>),
-    Fact(Box<Factor>)
+    Term(Box<Term>, Vec<(BiOperator, Term)>),
+}
+
+
+#[derive(Debug)]
+pub enum Term
+{
+    Factor(Factor, Vec<(BiOperator, Factor)>)
 }
 
 #[derive(Debug)]
@@ -110,43 +116,74 @@ impl BiOperator
         };
     }
 }
+
+
 impl Expression 
 {
     pub fn new(tokens : &mut VecDeque<LexToken>) -> Option<Expression>
     {
-        if let Some(factor) = Factor::new(tokens)
+        if let Some(term) = Term::new(tokens)
         {
-            return Some(Expression::Fact(Box::new(factor)));
-        }
-        else
-        {
-            let maybe_expr1 = Expression::new(tokens);
-            let maybe_bin_oper = tokens.pop_front();
-            if maybe_expr1.is_some() && 
-                (maybe_bin_oper == Some(LexToken::Addition) ||
-                    maybe_bin_oper == Some(LexToken::Negation))
+            let mut next_terms = Vec::new();
+            
+            while let Some(token) = tokens.pop_front()
             {
-                if let Some(expr2) = Expression::new(tokens)
+                if token == LexToken::Addition ||
+                    token == LexToken::Negation
                 {
-                    return Some(Expression::BinOp(Box::new(maybe_expr1.unwrap()),
-                                    BiOperator::new(&maybe_bin_oper.unwrap()).unwrap(),
-                                    Box::new(expr2)));
+                    if let Some(next_term) = Term::new(tokens)
+                    {
+                        next_terms.push((BiOperator::new(&token).unwrap(),next_term));
+                    }
+                    else
+                    {
+                        return None;
+                    }
+                }
+                else
+                {
+                    tokens.push_front(token);
+                    break;
                 }
             }
-            else if maybe_bin_oper.is_some()
-            {
-                tokens.push_front(maybe_bin_oper.unwrap());
-            }
-
-        }
-        if let Some(token) = tokens.pop_front() 
-        {
-            match token
-            {
-                _ => return None,
-            };
+            return Some(Expression::Term(Box::new(term),next_terms));
         }
         println!("Failed generating expression");
+        return None;
+    }
+}
+
+
+impl Term
+{
+    pub fn new(tokens : &mut VecDeque<LexToken>) -> Option<Term>
+    {
+        if let Some(factor) = Factor::new(tokens)
+        {
+            let mut next_factors = Vec::new();
+            
+            while let Some(token) = tokens.pop_front()
+            {
+                if token == LexToken::Multiplication ||
+                    token == LexToken::Division
+                {
+                    if let Some(next_factor) = Factor::new(tokens)
+                    {
+                        next_factors.push((BiOperator::new(&token).unwrap(),next_factor));
+                    }
+                    else
+                    {
+                        return None;
+                    }
+                }
+                else
+                {
+                    tokens.push_front(token);
+                    break;
+                }
+            }
+            return Some(Term::Factor(factor,next_factors));
+        }
         return None;
     }
 }
@@ -168,6 +205,7 @@ impl Factor
                     {
                         return Some(Factor::Expr(maybe_expr.unwrap()));
                     }
+                    return None;
                 }
                 LexToken::IntLiteral(_) => { 
                     if let Some(cons) = Constant::new(&token)
